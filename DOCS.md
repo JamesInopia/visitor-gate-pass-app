@@ -22,5 +22,5 @@ Develop a visitor gate pass system that provides security and administrators wit
 ## Links for Project Documentations
 | Document | Link |
 |---|---|
-| Project Timeline | [Jira Board](https://visitor-gatepass.atlassian.net/jira/software/projects/KAN/list?jql=project+%3D+KAN+ORDER+BY+cf%5B10019%5D+ASC&atlOrigin=eyJpIjoiNjgzNWM2OGY1NjNkNGFmYWI5YWY3ODg1MjVmNzY3MWMiLCJwIjoiaiJ9) |
-| UI/UX | [Figma Design](https://www.figma.com/design/5AaSP8R0aBq6gnQbEmDZfz/Untitled?node-id=0-1&p=f&t=IOQmSWIRMIFyszM-0) |
+| Project Timeline | [Notion: Timeline + Kanban Board](https://app.notion.com/p/visitor-gate-pass-3f0afb6c56fa80588ce6e929efadc1f2) |
+| UI/UX | [Figma: Design](https://www.figma.com/design/5AaSP8R0aBq6gnQbEmDZfz/Untitled?node-id=0-1&p=f&t=IOQmSWIRMIFyszM-0) |
