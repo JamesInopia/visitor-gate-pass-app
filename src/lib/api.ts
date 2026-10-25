@@ -46,6 +46,10 @@ export async function post<T>(path: string, body: unknown): Promise<T> {
   return (await send(path, "POST", body)).json();
 }
 
+export async function patch<T>(path: string, body: unknown): Promise<T> {
+  return (await send(path, "PATCH", body)).json();
+}
+
 export async function postForm<T>(path: string, form: FormData): Promise<T> {
   return (await send(path, "POST", form, 30000)).json();
 }

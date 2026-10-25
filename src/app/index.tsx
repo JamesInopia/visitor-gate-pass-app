@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet } from "react-native";
 
 import {
   GatepassStatusCard,
+  IncomingRequestsCard,
   ProfileCard,
   UpcomingGatepassCard,
 } from "@/components/home-cards";
@@ -21,6 +22,7 @@ function Home() {
     >
       <ProfileCard profile={profile} />
       {profile.role === "visitor" && <GatepassStatusCard />}
+      {profile.role === "tenant" && <IncomingRequestsCard />}
       {profile.role === "tenant" && <UpcomingGatepassCard />}
     </ScrollView>
   );

@@ -1,7 +1,8 @@
-import { del, get, post, postForm } from "@/lib/api";
-import type { IdPhoto } from "@/lib/pick-id-photo";
 import { File } from "expo-file-system";
 import { Platform } from "react-native";
+
+import { del, get, patch, postForm } from "@/lib/api";
+import type { IdPhoto } from "@/lib/pick-id-photo";
 
 export type RequestStatus = "pending" | "approved" | "denied";
 
@@ -18,7 +19,7 @@ export type GatepassRequest = {
   hostName: string;
   unitNo: string | null;
   purpose: string;
-  contact?: string | null;
+  visitorContact?: string | null;
   requestedAt: string;
   respondedAt: string | null;
   pass: Gatepass | null;
@@ -72,4 +73,14 @@ export const respondToRequest = (
   id: string,
   input: Decision,
 ): Promise<GatepassRequest> =>
-  post<GatepassRequest>("/api/requests/" + id + "/respond", input);
+  patch<GatepassRequest>(
+    "/api/requests/" + id,
+    input.decision === "approve"
+      ? {
+          decision: "approve",
+          expiresAt: new Date(
+            Date.now() + input.expiresInHours * 60 * 60 * 1000,
+          ).toISOString(),
+        }
+      : { decision: "deny" },
+  );

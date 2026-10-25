@@ -74,3 +74,13 @@ export function describe(r: GatepassRequest, now = new Date()) {
       return { phase, badge: "Expired", detail: "This gatepass has expired" };
   }
 }
+
+export const formatExpiryHours = (h: number) =>
+  h === 24 ? "24 hours (default)" : plural(h, "hour");
+
+export function describeForTenant(r: GatepassRequest, now = new Date()) {
+  const d = describe(r, now);
+  if (d.phase === "pending")
+    return { ...d, detail: `Requested ${formatDateTime(r.requestedAt)}` };
+  return d;
+}

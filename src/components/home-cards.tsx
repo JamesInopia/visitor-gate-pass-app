@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { ActivityIndicator, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 
 import { AppButton } from "@/components/app-button";
 import { StatusBadge } from "@/components/status-badge";
@@ -9,7 +9,7 @@ import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import type { Profile } from "@/data/profile";
 import { useRequests } from "@/hooks/use-requests";
-import { describe } from "@/lib/gatepass-time";
+import { describe, formatDateTime } from "@/lib/gatepass-time";
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -115,6 +115,54 @@ export function GatepassStatusCard() {
   }
 
   return <Card title="Gatepass Status">{body}</Card>;
+}
+
+export function IncomingRequestsCard() {
+  const router = useRouter();
+  const { status, requests } = useRequests();
+  const pending = requests
+    .filter((r) => r.status === "pending")
+    .sort(
+      (a, b) =>
+        new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
+    );
+  if (status !== "content" || pending.length === 0) return null;
+
+  const shown = pending.slice(0, 3);
+
+  return (
+    <Card title="Incoming Requests">
+      <View style={styles.stack}>
+        {shown.map((r) => (
+          <Pressable
+            key={r.id}
+            accessibilityRole="button"
+            onPress={() => router.push(`/manage-gatepass/${r.id}`)}
+            style={styles.upcomingRow}
+          >
+            <View style={styles.between}>
+              <ThemedText type="smallBold" style={{ flex: 1 }}>
+                {r.visitorName}
+              </ThemedText>
+              <StatusBadge phase="pending" label="Pending" />
+            </View>
+            <ThemedText type="small" themeColor="textSecondary">
+              Requested {formatDateTime(r.requestedAt)}
+            </ThemedText>
+          </Pressable>
+        ))}
+        <AppButton
+          title={
+            pending.length > shown.length
+              ? `View all (${pending.length})`
+              : "Review requests"
+          }
+          variant="outline"
+          onPress={() => router.push("/manage-gatepass")}
+        />
+      </View>
+    </Card>
+  );
 }
 
 export function UpcomingGatepassCard() {
