@@ -1,32 +1,40 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import { useColorScheme } from 'react-native';
+import { Ionicons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
-import { Colors } from '@/constants/theme';
+import { AppHeader } from "@/components/app-header";
+import { canAccess, TABS } from "@/constants/roles";
+import { useProfile } from "@/hooks/use-profile";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function AppTabs() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const { role } = useProfile();
+  const theme = useTheme();
 
   return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/home.png')}
-          renderingMode="template"
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: "#3c87f7",
+        tabBarInactiveTintColor: theme.textSecondary,
+        tabBarStyle: {
+          backgroundColor: theme.background,
+          borderTopColor: theme.backgroundSelected,
+        },
+      }}
+    >
+      {TABS.map((tab) => (
+        <Tabs.Screen
+          key={tab.route}
+          name={tab.route}
+          options={{
+            title: tab.title,
+            href: canAccess(role, tab.route) ? undefined : null,
+            header: () => <AppHeader title={tab.title} />,
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name={tab.icon} size={size} color={color} />
+            ),
+          }}
         />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
-    </NativeTabs>
+      ))}
+    </Tabs>
   );
 }
