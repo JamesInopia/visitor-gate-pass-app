@@ -1,10 +1,45 @@
-import { PagePlaceholder } from "@/components/page-placeholder";
+import { ScrollView, StyleSheet } from "react-native";
+
+import {
+  GatepassStatusCard,
+  ProfileCard,
+  UpcomingGatepassCard,
+} from "@/components/home-cards";
 import { RoleGuard } from "@/components/role-guard";
+import { MaxContentWidth, Spacing } from "@/constants/theme";
+import { useProfile } from "@/hooks/use-profile";
+import { useTheme } from "@/hooks/use-theme";
+
+function Home() {
+  const profile = useProfile();
+  const theme = useTheme();
+
+  return (
+    <ScrollView
+      style={{ backgroundColor: theme.background }}
+      contentContainerStyle={styles.content}
+    >
+      <ProfileCard profile={profile} />
+      {profile.role === "visitor" && <GatepassStatusCard />}
+      {profile.role === "tenant" && <UpcomingGatepassCard />}
+    </ScrollView>
+  );
+}
 
 export default function HomeScreen() {
   return (
     <RoleGuard route="index">
-      <PagePlaceholder title="Home" />
+      <Home />
     </RoleGuard>
   );
 }
+
+const styles = StyleSheet.create({
+  content: {
+    padding: Spacing.three,
+    gap: Spacing.three,
+    width: "100%",
+    maxWidth: MaxContentWidth,
+    alignSelf: "center",
+  },
+});

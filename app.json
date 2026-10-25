@@ -34,9 +34,16 @@
           "imageWidth": 76
         }
       ],
+      "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Gatepass to use your camera to take a photo of your ID.",
+          "photosPermission": "Allow Gatepass to access your photos so you can upload a photo of your ID."
+        }
+      ],
       "expo-sqlite",
-      "expo-web-browser",
-      "expo-image"
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
