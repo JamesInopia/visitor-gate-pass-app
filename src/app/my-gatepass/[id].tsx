@@ -15,7 +15,12 @@ import {
   type GatepassRequest,
 } from "@/data/requests";
 import { useTheme } from "@/hooks/use-theme";
-import { describe, formatDateTime } from "@/lib/gatepass-time";
+import {
+  describe,
+  formatDateTime,
+  visitDateOf,
+} from "@/lib/gatepass-time";
+import { formatVisitDate } from "@/lib/visit-date";
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -117,7 +122,9 @@ export default function GatepassDetailScreen() {
   const cancelLabel =
     d.phase === "pending"
       ? "Cancel request"
-      : d.phase === "denied" || d.phase === "expired"
+      : d.phase === "denied" ||
+          d.phase === "expired" ||
+          d.phase === "cancelled"
         ? "Delete request"
         : "Cancel gatepass";
 
@@ -137,11 +144,21 @@ export default function GatepassDetailScreen() {
           {request.unitNo ? (
             <Field label="Unit / Room" value={request.unitNo} />
           ) : null}
+          <Field
+            label="Date of visit"
+            value={formatVisitDate(visitDateOf(request))}
+          />
           <Field label="Purpose of visit" value={request.purpose} />
           <Field label="Requested" value={formatDateTime(request.requestedAt)} />
           {request.respondedAt ? (
             <Field
-              label={request.status === "denied" ? "Denied" : "Approved"}
+              label={
+                request.status === "denied"
+                  ? "Denied"
+                  : request.status === "cancelled"
+                    ? "Cancelled"
+                    : "Approved"
+              }
               value={formatDateTime(request.respondedAt)}
             />
           ) : null}
@@ -158,8 +175,7 @@ export default function GatepassDetailScreen() {
                 {request.pass.code}
               </ThemedText>
             </View>
-            <Field label="Takes effect" value={formatDateTime(request.pass.startsAt)} />
-            <Field label="Expires" value={formatDateTime(request.pass.expiresAt)} />
+            <Field label="Valid on" value={d.schedule} />
           </ThemedView>
         )}
 

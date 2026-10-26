@@ -9,6 +9,7 @@ const DOT: Record<Phase, string> = {
   upcoming: "#3c87f7",
   active: "#2e9e5b",
   denied: "#d64545",
+  cancelled: "#9aa0a6",
   expired: "#9aa0a6",
 };
 

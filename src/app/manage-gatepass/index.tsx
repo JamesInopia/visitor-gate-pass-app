@@ -17,7 +17,7 @@ import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useRequests } from "@/hooks/use-requests";
 import { useTheme } from "@/hooks/use-theme";
-import { describeForTenant } from "@/lib/gatepass-time";
+import { describeForTenant, phaseOf } from "@/lib/gatepass-time";
 
 export default function ManageGatepassScreen() {
   const theme = useTheme();
@@ -27,11 +27,13 @@ export default function ManageGatepassScreen() {
 
   const q = query.trim().toLowerCase();
   const now = new Date();
-  const shown = requests
+  const visible = requests.filter((r) => r.status !== "cancelled");
+  const shown = visible
     .filter((r) => r.visitorName.toLowerCase().includes(q))
     .sort(
       (a, b) =>
-        Number(b.status === "pending") - Number(a.status === "pending") ||
+        Number(phaseOf(b, now) === "pending") -
+          Number(phaseOf(a, now) === "pending") ||
         new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
     );
 
@@ -51,7 +53,7 @@ export default function ManageGatepassScreen() {
       </ThemedView>
     );
 
-  if (status === "empty")
+  if (status === "empty" || (status === "content" && visible.length === 0))
     return (
       <ThemedView style={styles.middle}>
         <ThemedText type="subtitle" style={styles.emptyTitle}>
@@ -119,6 +121,9 @@ export default function ManageGatepassScreen() {
                 <ThemedText type="smallBold">{item.visitorName}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   {d.detail}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {d.schedule}
                 </ThemedText>
               </View>
               <View style={styles.statusCol}>

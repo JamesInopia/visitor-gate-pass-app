@@ -6,6 +6,7 @@ import {
   ProfileCard,
   UpcomingGatepassCard,
 } from "@/components/home-cards";
+import { NoticeList } from "@/components/notice-list";
 import { RoleGuard } from "@/components/role-guard";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useProfile } from "@/hooks/use-profile";
@@ -21,7 +22,12 @@ function Home() {
       contentContainerStyle={styles.content}
     >
       <ProfileCard profile={profile} />
-      {profile.role === "visitor" && <GatepassStatusCard />}
+      {profile.role === "visitor" && (
+        <>
+          <NoticeList />
+          <GatepassStatusCard />
+        </>
+      )}
       {profile.role === "tenant" && <IncomingRequestsCard />}
       {profile.role === "tenant" && <UpcomingGatepassCard />}
     </ScrollView>

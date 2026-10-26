@@ -9,7 +9,12 @@ import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import type { Profile } from "@/data/profile";
 import { useRequests } from "@/hooks/use-requests";
-import { describe, formatDateTime } from "@/lib/gatepass-time";
+import {
+  describe,
+  describeForTenant,
+  formatDateTime,
+  phaseOf,
+} from "@/lib/gatepass-time";
 
 function Card({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -97,6 +102,9 @@ export function GatepassStatusCard() {
           <StatusBadge phase={top.d.phase} label={top.d.badge} />
         </View>
         <ThemedText themeColor="textSecondary">{top.d.detail}</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          {top.d.schedule}
+        </ThemedText>
         <AppButton
           title={
             relevant.length > 1
@@ -121,7 +129,7 @@ export function IncomingRequestsCard() {
   const router = useRouter();
   const { status, requests } = useRequests();
   const pending = requests
-    .filter((r) => r.status === "pending")
+    .filter((r) => phaseOf(r) === "pending")
     .sort(
       (a, b) =>
         new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
@@ -147,7 +155,8 @@ export function IncomingRequestsCard() {
               <StatusBadge phase="pending" label="Pending" />
             </View>
             <ThemedText type="small" themeColor="textSecondary">
-              Requested {formatDateTime(r.requestedAt)}
+              {describeForTenant(r).schedule} · Requested{" "}
+              {formatDateTime(r.requestedAt)}
             </ThemedText>
           </Pressable>
         ))}
@@ -212,6 +221,9 @@ export function UpcomingGatepassCard() {
             </View>
             <ThemedText type="small" themeColor="textSecondary">
               {d.detail}
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {d.schedule}
             </ThemedText>
           </View>
         ))}

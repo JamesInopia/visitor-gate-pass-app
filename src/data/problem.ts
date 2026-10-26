@@ -3,6 +3,14 @@ export function problemFor(
   notFound = "That request is not there any more.",
   conflict = "You already have a pending request for that tenant.",
 ) {
+  const code = e instanceof Error ? (e as { code?: string }).code : undefined;
+  if (code === "has_active_pass")
+    return "You already have an approved gatepass, so you cannot request another one.";
+  if (code === "no_tenant")
+    return "We could not find a tenant with that name and unit. Check the details and try again.";
+  if (code === "visit_date_passed")
+    return "That visit date has already passed.";
+
   if (e instanceof Error && e.message === "timeout")
     return "The server took too long. Try again.";
   if (e instanceof TypeError)

@@ -12,13 +12,14 @@ import {
 
 import { AppButton } from "@/components/app-button";
 import { NewRequestModal } from "@/components/new-request-modal";
+import { NoticeList } from "@/components/notice-list";
 import { StatusBadge } from "@/components/status-badge";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useRequests } from "@/hooks/use-requests";
 import { useTheme } from "@/hooks/use-theme";
-import { describe } from "@/lib/gatepass-time";
+import { describe, phaseOf } from "@/lib/gatepass-time";
 
 export default function MyGatepassScreen() {
   const theme = useTheme();
@@ -34,6 +35,10 @@ export default function MyGatepassScreen() {
 
   const q = query.trim().toLowerCase();
   const now = new Date();
+  const hasApproved = requests.some((r) => {
+    const p = phaseOf(r, now);
+    return p === "upcoming" || p === "active";
+  });
   const shown = requests
     .filter(
       (r) =>
@@ -93,6 +98,15 @@ export default function MyGatepassScreen() {
           Your Requests
         </ThemedText>
 
+        {hasApproved && (
+          <ThemedView type="backgroundElement" style={styles.notice}>
+            <ThemedText type="small">
+              You have an approved gatepass, so your other requests were
+              cancelled and you cannot send new ones until it expires.
+            </ThemedText>
+          </ThemedView>
+        )}
+
         <View
           style={[
             styles.row,
@@ -135,6 +149,9 @@ export default function MyGatepassScreen() {
                     {item.unitNo ? `Unit ${item.unitNo} · ` : ""}
                     {d.detail}
                   </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {d.schedule}
+                  </ThemedText>
                 </View>
                 <View style={styles.statusCol}>
                   <StatusBadge phase={d.phase} label={d.badge} />
@@ -154,9 +171,10 @@ export default function MyGatepassScreen() {
 
   return (
     <ThemedView style={{ flex: 1 }}>
+      <NoticeList style={styles.notices} />
       {body}
 
-      {status === "content" && (
+      {status === "content" && !hasApproved && (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Request a gatepass"
@@ -175,7 +193,7 @@ export default function MyGatepassScreen() {
       )}
 
       <NewRequestModal
-        visible={adding}
+        visible={adding && !hasApproved}
         onClose={() => setAdding(false)}
         onCreated={refresh}
       />
@@ -215,6 +233,8 @@ const styles = StyleSheet.create({
   },
   nameCol: { flex: 3 },
   statusCol: { flex: 2, alignItems: "flex-start" },
+  notices: { padding: Spacing.three, paddingBottom: 0 },
+  notice: { borderRadius: 12, padding: Spacing.three },
   noMatch: { textAlign: "center", paddingTop: Spacing.three },
   fab: {
     position: "absolute",

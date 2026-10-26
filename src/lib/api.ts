@@ -34,7 +34,14 @@ async function send(path: string, method: string, body?: unknown, ms = 8000) {
     }),
     timeout(ms),
   ]);
-  if (!res.ok) throw new Error(String(res.status));
+  if (!res.ok) {
+    let code: string | undefined;
+    try {
+      const data = await res.json();
+      if (typeof data?.error === "string") code = data.error;
+    } catch {}
+    throw Object.assign(new Error(String(res.status)), { code });
+  }
   return res;
 }
 
@@ -48,6 +55,10 @@ export async function post<T>(path: string, body: unknown): Promise<T> {
 
 export async function patch<T>(path: string, body: unknown): Promise<T> {
   return (await send(path, "PATCH", body)).json();
+}
+
+export async function patchVoid(path: string, body: unknown): Promise<void> {
+  await send(path, "PATCH", body);
 }
 
 export async function postForm<T>(path: string, form: FormData): Promise<T> {

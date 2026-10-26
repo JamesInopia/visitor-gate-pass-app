@@ -13,21 +13,30 @@ import { AppButton } from "@/components/app-button";
 import { StatusBadge } from "@/components/status-badge";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { TimeField } from "@/components/time-field";
 import { Spacing } from "@/constants/theme";
 import { problemFor, type Status } from "@/data/problem";
 import {
-  DEFAULT_EXPIRY_HOURS,
-  EXPIRY_HOURS,
+  approveRequest,
+  denyRequest,
   fetchRequest,
-  respondToRequest,
   type GatepassRequest,
 } from "@/data/requests";
 import { useTheme } from "@/hooks/use-theme";
 import {
   describeForTenant,
   formatDateTime,
-  formatExpiryHours,
+  visitDateOf,
 } from "@/lib/gatepass-time";
+import {
+  DAY_END,
+  END_OPTIONS,
+  formatMinutes,
+  formatVisitDate,
+  windowFor,
+} from "@/lib/visit-date";
+
+type Mode = "allDay" | "custom";
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -48,7 +57,10 @@ export default function IncomingRequestDetailScreen() {
   const [request, setRequest] = useState<GatepassRequest | null>(null);
   const [problem, setProblem] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const [hours, setHours] = useState<number>(DEFAULT_EXPIRY_HOURS);
+  const [mode, setMode] = useState<Mode>("allDay");
+  const [startMin, setStartMin] = useState(9 * 60);
+  const [endMin, setEndMin] = useState(17 * 60);
+  const [timeProblem, setTimeProblem] = useState("");
   const [confirming, setConfirming] = useState<"approve" | "deny" | null>(null);
   const [sending, setSending] = useState(false);
 
@@ -73,31 +85,57 @@ export default function IncomingRequestDetailScreen() {
   const goBack = () =>
     router.canGoBack() ? router.back() : router.replace("/manage-gatepass");
 
+  function chooseStart(m: number) {
+    if (m >= DAY_END) {
+      setTimeProblem("The start time must be before 11:59 PM.");
+      return;
+    }
+    setTimeProblem("");
+    setStartMin(m);
+    if (endMin <= m) setEndMin(END_OPTIONS.find((o) => o > m) ?? DAY_END);
+  }
+
+  function chooseEnd(m: number) {
+    if (m <= startMin) {
+      setTimeProblem("The end time must be after the start time.");
+      return;
+    }
+    setTimeProblem("");
+    setEndMin(m);
+  }
+
+  const from = mode === "allDay" ? 0 : startMin;
+  const to = mode === "allDay" ? DAY_END : endMin;
+  const scheduleText =
+    mode === "allDay"
+      ? "all day (12:00 AM – 11:59 PM)"
+      : `${formatMinutes(from)} – ${formatMinutes(to)}`;
+
   function submit(decision: "approve" | "deny") {
+    if (!request) return;
     setSending(true);
     setProblem("");
-    respondToRequest(
-      id,
+    const done =
       decision === "approve"
-        ? { decision, expiresInHours: hours }
-        : { decision },
-    )
-      .then((row) => {
-        setRequest(row);
-        setConfirming(null);
-        setSending(false);
-      })
-      .catch((e) => {
-        setProblem(
-          problemFor(
-            e,
-            undefined,
-            "This request was already answered. Go back to refresh the list.",
-          ),
-        );
-        setSending(false);
-        setConfirming(null);
-      });
+        ? approveRequest(id, windowFor(visitDateOf(request), from, to)).then(
+            (row) => {
+              setRequest(row);
+              setConfirming(null);
+              setSending(false);
+            },
+          )
+        : denyRequest(id).then(goBack);
+    done.catch((e) => {
+      setProblem(
+        problemFor(
+          e,
+          undefined,
+          "This request was already answered or cancelled. Go back to refresh the list.",
+        ),
+      );
+      setSending(false);
+      setConfirming(null);
+    });
   }
 
   const back = (
@@ -142,7 +180,8 @@ export default function IncomingRequestDetailScreen() {
     );
 
   const d = describeForTenant(request);
-  const isPending = request.status === "pending";
+  const canRespond = d.phase === "pending";
+  const visit = formatVisitDate(visitDateOf(request));
 
   return (
     <ThemedView style={styles.screen}>
@@ -157,6 +196,7 @@ export default function IncomingRequestDetailScreen() {
         <ThemedText themeColor="textSecondary">{d.detail}</ThemedText>
 
         <ThemedView type="backgroundElement" style={styles.card}>
+          <Field label="Date of visit" value={visit} />
           <Field label="Purpose of visit" value={request.purpose} />
           {request.visitorContact ? (
             <Field label="Contact" value={request.visitorContact} />
@@ -164,20 +204,28 @@ export default function IncomingRequestDetailScreen() {
           {request.unitNo ? (
             <Field label="Unit / Room" value={request.unitNo} />
           ) : null}
-          <Field label="Requested" value={formatDateTime(request.requestedAt)} />
+          <Field
+            label="Requested"
+            value={formatDateTime(request.requestedAt)}
+          />
           {request.respondedAt ? (
             <Field
-              label={request.status === "denied" ? "Rejected" : "Accepted"}
+              label={
+                request.status === "denied"
+                  ? "Rejected"
+                  : request.status === "cancelled"
+                    ? "Cancelled"
+                    : "Accepted"
+              }
               value={formatDateTime(request.respondedAt)}
             />
           ) : null}
         </ThemedView>
 
-        {request.pass && !isPending && (
+        {request.pass && !canRespond && (
           <ThemedView type="backgroundElement" style={styles.card}>
             <ThemedText type="smallBold">Gatepass</ThemedText>
-            <Field label="Takes effect" value={formatDateTime(request.pass.startsAt)} />
-            <Field label="Expires" value={formatDateTime(request.pass.expiresAt)} />
+            <Field label="Valid on" value={d.schedule} />
           </ThemedView>
         )}
 
@@ -187,24 +235,31 @@ export default function IncomingRequestDetailScreen() {
           </ThemedText>
         )}
 
-        {isPending && (
+        {canRespond && (
           <>
             <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">Pass expires after</ThemedText>
+              <ThemedText type="smallBold">When can they come in?</ThemedText>
               <View style={styles.chips}>
-                {EXPIRY_HOURS.map((h) => {
-                  const selected = h === hours;
+                {(
+                  [
+                    ["allDay", "All day"],
+                    ["custom", "Set a time"],
+                  ] as const
+                ).map(([value, label]) => {
+                  const selected = mode === value;
                   return (
                     <Pressable
-                      key={h}
+                      key={value}
                       accessibilityRole="radio"
                       accessibilityState={{ selected }}
                       disabled={sending}
-                      onPress={() => setHours(h)}
+                      onPress={() => setMode(value)}
                       style={[
                         styles.chip,
                         {
-                          borderColor: selected ? "#3c87f7" : theme.textSecondary,
+                          borderColor: selected
+                            ? "#3c87f7"
+                            : theme.textSecondary,
                           backgroundColor: selected ? "#3c87f7" : "transparent",
                         },
                       ]}
@@ -213,14 +268,37 @@ export default function IncomingRequestDetailScreen() {
                         type="small"
                         style={{ color: selected ? "#ffffff" : theme.text }}
                       >
-                        {h} hr
+                        {label}
                       </ThemedText>
                     </Pressable>
                   );
                 })}
               </View>
+
+              {mode === "custom" && (
+                <>
+                  <TimeField
+                    label="From"
+                    value={startMin}
+                    onChange={chooseStart}
+                    disabled={sending}
+                  />
+                  <TimeField
+                    label="To"
+                    value={endMin}
+                    onChange={chooseEnd}
+                    disabled={sending}
+                  />
+                  {timeProblem !== "" && (
+                    <ThemedText type="small" style={{ color: "#d64545" }}>
+                      {timeProblem}
+                    </ThemedText>
+                  )}
+                </>
+              )}
+
               <ThemedText type="small" themeColor="textSecondary">
-                {formatExpiryHours(hours)} from when you accept.
+                The pass will only work on {visit}, {scheduleText}.
               </ThemedText>
             </ThemedView>
 
@@ -228,8 +306,8 @@ export default function IncomingRequestDetailScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText>
                   {confirming === "approve"
-                    ? `Accept ${request.visitorName} for ${hours} ${hours === 1 ? "hour" : "hours"}?`
-                    : `Reject ${request.visitorName}? This cannot be undone.`}
+                    ? `Accept ${request.visitorName} on ${visit}, ${scheduleText}?`
+                    : `Reject ${request.visitorName}? The request will be deleted and they will be told it was denied.`}
                 </ThemedText>
                 <View style={{ flexDirection: "row", gap: Spacing.three }}>
                   <View style={{ flex: 1 }}>
@@ -300,7 +378,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: 12, padding: Spacing.three, gap: Spacing.three },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.two },
   chip: {
-    minWidth: 56,
+    minWidth: 96,
     minHeight: 40,
     alignItems: "center",
     justifyContent: "center",

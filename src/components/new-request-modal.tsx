@@ -12,6 +12,7 @@ import {
 
 import { AppButton } from "@/components/app-button";
 import { ThemedText } from "@/components/themed-text";
+import { VisitDatePicker } from "@/components/visit-date-picker";
 import { Spacing } from "@/constants/theme";
 import { problemFor } from "@/data/problem";
 import { createRequest } from "@/data/requests";
@@ -37,6 +38,7 @@ export function NewRequestModal({
   const profile = useProfile();
   const [hostName, setHostName] = useState("");
   const [unitNo, setUnitNo] = useState("");
+  const [visitDate, setVisitDate] = useState<string | null>(null);
   const [purpose, setPurpose] = useState("");
   const [contact, setContact] = useState(profile.contact ?? "");
   const [idPhoto, setIdPhoto] = useState<IdPhoto | null>(null);
@@ -46,6 +48,7 @@ export function NewRequestModal({
   const valid =
     hostName.trim() !== "" &&
     unitNo.trim() !== "" &&
+    visitDate !== null &&
     purpose.trim() !== "" &&
     validContact(contact.trim()) &&
     idPhoto !== null;
@@ -53,6 +56,7 @@ export function NewRequestModal({
   function close() {
     setHostName("");
     setUnitNo("");
+    setVisitDate(null);
     setPurpose("");
     setContact(profile.contact ?? "");
     setIdPhoto(null);
@@ -76,12 +80,13 @@ export function NewRequestModal({
   }
 
   function save() {
-    if (!idPhoto) return;
+    if (!idPhoto || !visitDate) return;
     setSaving(true);
     setProblem("");
     createRequest({
       hostName: hostName.trim(),
       unitNo: unitNo.trim(),
+      visitDate,
       purpose: purpose.trim(),
       contact: contact.trim(),
       idImage: idPhoto,
@@ -167,6 +172,15 @@ export function NewRequestModal({
                 autoCapitalize="characters"
                 editable={!saving}
                 style={input}
+              />
+            </View>
+
+            <View style={{ gap: Spacing.one }}>
+              <ThemedText type="small">Date of visit</ThemedText>
+              <VisitDatePicker
+                value={visitDate}
+                onChange={setVisitDate}
+                disabled={saving}
               />
             </View>
 
