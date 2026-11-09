@@ -36,12 +36,19 @@
       ],
       "expo-image",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Gatepass to use your camera to scan visitor gatepass QR codes."
+        }
+      ],
+      [
         "expo-image-picker",
         {
           "cameraPermission": "Allow Gatepass to use your camera to take a photo of your ID.",
           "photosPermission": "Allow Gatepass to access your photos so you can upload a photo of your ID."
         }
       ],
+
       "expo-sqlite",
       "expo-web-browser"
     ],

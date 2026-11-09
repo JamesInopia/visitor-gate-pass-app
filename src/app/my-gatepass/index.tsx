@@ -1,29 +1,30 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
 
 import { AppButton } from "@/components/app-button";
+import { GatepassDetails } from "@/components/gatepass-details";
 import { NewRequestModal } from "@/components/new-request-modal";
 import { NoticeList } from "@/components/notice-list";
-import { StatusBadge } from "@/components/status-badge";
+import { RequestHeaderRow, RequestRow } from "@/components/request-row";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Spacing } from "@/constants/theme";
+import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useRequests } from "@/hooks/use-requests";
 import { useTheme } from "@/hooks/use-theme";
-import { describe, phaseOf } from "@/lib/gatepass-time";
+import { phaseOf } from "@/lib/gatepass-time";
 
 export default function MyGatepassScreen() {
   const theme = useTheme();
-  const router = useRouter();
   const { status, requests, problem, retry, refresh } = useRequests();
   const [query, setQuery] = useState("");
   const [adding, setAdding] = useState(false);
@@ -35,11 +36,22 @@ export default function MyGatepassScreen() {
 
   const q = query.trim().toLowerCase();
   const now = new Date();
-  const hasApproved = requests.some((r) => {
-    const p = phaseOf(r, now);
-    return p === "upcoming" || p === "active";
-  });
-  const shown = requests
+
+  // The accepted gatepass (upcoming or active). While one exists it takes over
+  // this screen: other requests were cancelled and new ones can't be sent.
+  const approved = requests
+    .filter((r) => {
+      const p = phaseOf(r, now);
+      return p === "upcoming" || p === "active";
+    })
+    .sort(
+      (a, b) =>
+        new Date(a.pass?.startsAt ?? 0).getTime() -
+        new Date(b.pass?.startsAt ?? 0).getTime(),
+    )[0];
+
+  const pending = requests
+    .filter((r) => phaseOf(r, now) === "pending")
     .filter(
       (r) =>
         r.hostName.toLowerCase().includes(q) ||
@@ -49,6 +61,7 @@ export default function MyGatepassScreen() {
       (a, b) =>
         new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
     );
+  const hasPending = requests.some((r) => phaseOf(r, now) === "pending");
 
   let body;
   if (status === "loading") {
@@ -65,7 +78,14 @@ export default function MyGatepassScreen() {
         <AppButton title="Try again" variant="outline" onPress={retry} />
       </View>
     );
-  } else if (status === "empty") {
+  } else if (approved) {
+    body = (
+      <ScrollView contentContainerStyle={styles.content}>
+        <GatepassDetails request={approved} />
+        <View style={{ height: Spacing.three }} />
+      </ScrollView>
+    );
+  } else if (!hasPending) {
     body = (
       <View style={styles.middle}>
         <ThemedText type="subtitle" style={styles.emptyTitle}>
@@ -98,67 +118,13 @@ export default function MyGatepassScreen() {
           Your Requests
         </ThemedText>
 
-        {hasApproved && (
-          <ThemedView type="backgroundElement" style={styles.notice}>
-            <ThemedText type="small">
-              You have an approved gatepass, so your other requests were
-              cancelled and you cannot send new ones until it expires.
-            </ThemedText>
-          </ThemedView>
-        )}
-
-        <View
-          style={[
-            styles.row,
-            styles.headerRow,
-            { borderColor: theme.textSecondary },
-          ]}
-        >
-          <ThemedText type="smallBold" style={styles.nameCol}>
-            Request Sent to:
-          </ThemedText>
-          <ThemedText type="smallBold" style={styles.statusCol}>
-            Status
-          </ThemedText>
-        </View>
+        <RequestHeaderRow />
 
         <FlatList
-          data={shown}
+          data={pending}
           keyExtractor={(r) => r.id}
           contentContainerStyle={{ gap: Spacing.two, paddingBottom: 96 }}
-          renderItem={({ item }) => {
-            const d = describe(item, now);
-            return (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push(`/my-gatepass/${item.id}`)}
-                style={({ pressed }) => [
-                  styles.row,
-                  styles.card,
-                  {
-                    borderColor: theme.textSecondary,
-                    backgroundColor: pressed
-                      ? theme.backgroundSelected
-                      : theme.background,
-                  },
-                ]}
-              >
-                <View style={styles.nameCol}>
-                  <ThemedText type="smallBold">{item.hostName}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {item.unitNo ? `Unit ${item.unitNo} · ` : ""}
-                    {d.detail}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {d.schedule}
-                  </ThemedText>
-                </View>
-                <View style={styles.statusCol}>
-                  <StatusBadge phase={d.phase} label={d.badge} />
-                </View>
-              </Pressable>
-            );
-          }}
+          renderItem={({ item }) => <RequestRow request={item} now={now} />}
           ListEmptyComponent={
             <ThemedText themeColor="textSecondary" style={styles.noMatch}>
               No requests match &quot;{query}&quot;.
@@ -169,12 +135,14 @@ export default function MyGatepassScreen() {
     );
   }
 
+  const canRequest = status !== "loading" && status !== "error" && !approved;
+
   return (
     <ThemedView style={{ flex: 1 }}>
       <NoticeList style={styles.notices} />
       {body}
 
-      {status === "content" && !hasApproved && (
+      {canRequest && hasPending && (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Request a gatepass"
@@ -193,7 +161,7 @@ export default function MyGatepassScreen() {
       )}
 
       <NewRequestModal
-        visible={adding && !hasApproved}
+        visible={adding && canRequest}
         onClose={() => setAdding(false)}
         onCreated={refresh}
       />
@@ -211,6 +179,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 24, lineHeight: 32, textAlign: "center" },
   screen: { flex: 1, padding: Spacing.three, gap: Spacing.three },
+  content: {
+    padding: Spacing.three,
+    gap: Spacing.three,
+    width: "100%",
+    maxWidth: MaxContentWidth,
+    alignSelf: "center",
+  },
   search: {
     flexDirection: "row",
     alignItems: "center",
@@ -220,21 +195,7 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, paddingVertical: Spacing.three, fontSize: 16 },
   title: { fontSize: 24, lineHeight: 32, textAlign: "center" },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.two,
-  },
-  headerRow: { paddingHorizontal: Spacing.three },
-  card: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: Spacing.three,
-  },
-  nameCol: { flex: 3 },
-  statusCol: { flex: 2, alignItems: "flex-start" },
   notices: { padding: Spacing.three, paddingBottom: 0 },
-  notice: { borderRadius: 12, padding: Spacing.three },
   noMatch: { textAlign: "center", paddingTop: Spacing.three },
   fab: {
     position: "absolute",

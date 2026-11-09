@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { AppButton } from "@/components/app-button";
-import { StatusBadge } from "@/components/status-badge";
+import { GatepassDetails } from "@/components/gatepass-details";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
@@ -15,23 +15,7 @@ import {
   type GatepassRequest,
 } from "@/data/requests";
 import { useTheme } from "@/hooks/use-theme";
-import {
-  describe,
-  formatDateTime,
-  visitDateOf,
-} from "@/lib/gatepass-time";
-import { formatVisitDate } from "@/lib/visit-date";
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={{ gap: 2 }}>
-      <ThemedText type="small" themeColor="textSecondary">
-        {label}
-      </ThemedText>
-      <ThemedText>{value}</ThemedText>
-    </View>
-  );
-}
+import { describe } from "@/lib/gatepass-time";
 
 export default function GatepassDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -132,52 +116,7 @@ export default function GatepassDetailScreen() {
     <ThemedView style={styles.screen}>
       {back}
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <ThemedText type="subtitle" style={styles.hostName}>
-            {request.hostName}
-          </ThemedText>
-          <StatusBadge phase={d.phase} label={d.badge} />
-        </View>
-        <ThemedText themeColor="textSecondary">{d.detail}</ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.card}>
-          {request.unitNo ? (
-            <Field label="Unit / Room" value={request.unitNo} />
-          ) : null}
-          <Field
-            label="Date of visit"
-            value={formatVisitDate(visitDateOf(request))}
-          />
-          <Field label="Purpose of visit" value={request.purpose} />
-          <Field label="Requested" value={formatDateTime(request.requestedAt)} />
-          {request.respondedAt ? (
-            <Field
-              label={
-                request.status === "denied"
-                  ? "Denied"
-                  : request.status === "cancelled"
-                    ? "Cancelled"
-                    : "Approved"
-              }
-              value={formatDateTime(request.respondedAt)}
-            />
-          ) : null}
-        </ThemedView>
-
-        {request.pass && d.phase !== "expired" && (
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="smallBold">Gatepass</ThemedText>
-            <View style={{ gap: 2 }}>
-              <ThemedText type="small" themeColor="textSecondary">
-                Code (show this at the entrance)
-              </ThemedText>
-              <ThemedText type="code" selectable style={styles.code}>
-                {request.pass.code}
-              </ThemedText>
-            </View>
-            <Field label="Valid on" value={d.schedule} />
-          </ThemedView>
-        )}
+        <GatepassDetails request={request} />
 
         {problem !== "" && (
           <ThemedText type="small" style={{ color: "#d64545" }}>
@@ -235,13 +174,5 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.three,
   },
   content: { padding: Spacing.three, gap: Spacing.three },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: Spacing.two,
-  },
-  hostName: { flex: 1, fontSize: 28, lineHeight: 36 },
   card: { borderRadius: 12, padding: Spacing.three, gap: Spacing.three },
-  code: { fontSize: 24, lineHeight: 32, letterSpacing: 2 },
 });
