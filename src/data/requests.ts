@@ -76,3 +76,6 @@ export const approveRequest = (
 
 export const denyRequest = (id: string): Promise<void> =>
   patchVoid("/api/requests/" + id, { decision: "deny" });
+
+export const expireRequest = (id: string): Promise<GatepassRequest> =>
+  patch<GatepassRequest>("/api/requests/" + id, { decision: "expire" });

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
@@ -103,14 +103,14 @@ export default function GatepassDetailScreen() {
     );
 
   const d = describe(request);
+
+  // An accepted (upcoming or active) gatepass lives on the My Gatepass screen
+  // itself, with no back button. Only the tenant can cancel or expire it.
+  if (d.phase === "upcoming" || d.phase === "active")
+    return <Redirect href="/my-gatepass" />;
+
   const cancelLabel =
-    d.phase === "pending"
-      ? "Cancel request"
-      : d.phase === "denied" ||
-          d.phase === "expired" ||
-          d.phase === "cancelled"
-        ? "Delete request"
-        : "Cancel gatepass";
+    d.phase === "pending" ? "Cancel request" : "Delete request";
 
   return (
     <ThemedView style={styles.screen}>

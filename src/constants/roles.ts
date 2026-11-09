@@ -8,6 +8,7 @@ export type TabRoute =
   | "my-gatepass"
   | "visit-history"
   | "manage-gatepass"
+  | "manage-history"
   | "scan-gatepass"
   | "entry-log";
 
@@ -20,13 +21,14 @@ export const TABS: {
   { route: "my-gatepass", title: "My Gatepass", icon: "ticket" },
   { route: "visit-history", title: "History", icon: "time" },
   { route: "manage-gatepass", title: "Manage Gatepass", icon: "list" },
+  { route: "manage-history", title: "History", icon: "time" },
   { route: "scan-gatepass", title: "Scan Gatepass", icon: "qr-code" },
   { route: "entry-log", title: "Entry Log", icon: "reader" },
 ];
 
 export const ROLE_ROUTES: Record<Role, TabRoute[]> = {
   visitor: ["index", "my-gatepass", "visit-history"],
-  tenant: ["index", "manage-gatepass"],
+  tenant: ["index", "manage-gatepass", "manage-history"],
   admin: ["index", "scan-gatepass", "entry-log"],
 };
 

@@ -18,7 +18,9 @@ import { Spacing } from "@/constants/theme";
 import { problemFor, type Status } from "@/data/problem";
 import {
   approveRequest,
+  deleteRequest,
   denyRequest,
+  expireRequest,
   fetchRequest,
   type GatepassRequest,
 } from "@/data/requests";
@@ -63,6 +65,7 @@ export default function IncomingRequestDetailScreen() {
   const [timeProblem, setTimeProblem] = useState("");
   const [confirming, setConfirming] = useState<"approve" | "deny" | null>(null);
   const [sending, setSending] = useState(false);
+  const [ending, setEnding] = useState<"cancel" | "expire" | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -138,6 +141,36 @@ export default function IncomingRequestDetailScreen() {
     });
   }
 
+  // Approved but not started: cancelling deletes the request outright.
+  // Active: expiring ends the pass now and keeps it in History.
+  function endPass(action: "cancel" | "expire") {
+    setSending(true);
+    setProblem("");
+    const done =
+      action === "cancel"
+        ? deleteRequest(id).then(goBack)
+        : expireRequest(id).then((row) => {
+            if (describeForTenant(row).phase === "active")
+              throw new Error("still-active");
+            setRequest(row);
+            setEnding(null);
+            setSending(false);
+          });
+    done.catch((e) => {
+      setProblem(
+        (e as Error).message === "still-active"
+          ? "The server did not expire this gatepass. Try again."
+          : problemFor(
+              e,
+              undefined,
+              "This gatepass was already changed. Go back to refresh the list.",
+            ),
+      );
+      setSending(false);
+      setEnding(null);
+    });
+  }
+
   const back = (
     <Pressable
       accessibilityRole="button"
@@ -181,6 +214,8 @@ export default function IncomingRequestDetailScreen() {
 
   const d = describeForTenant(request);
   const canRespond = d.phase === "pending";
+  const endAction =
+    d.phase === "upcoming" ? "cancel" : d.phase === "active" ? "expire" : null;
   const visit = formatVisitDate(visitDateOf(request));
 
   return (
@@ -234,6 +269,41 @@ export default function IncomingRequestDetailScreen() {
             {problem}
           </ThemedText>
         )}
+
+        {endAction &&
+          (ending ? (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText>
+                {ending === "cancel"
+                  ? `Cancel ${request.visitorName}'s gatepass? It will be deleted and cannot be undone.`
+                  : `Expire ${request.visitorName}'s gatepass now? They will no longer be able to enter with it.`}
+              </ThemedText>
+              <View style={{ flexDirection: "row", gap: Spacing.three }}>
+                <View style={{ flex: 1 }}>
+                  <AppButton
+                    title="Go back"
+                    variant="outline"
+                    onPress={() => setEnding(null)}
+                    disabled={sending}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppButton
+                    title="Yes, continue"
+                    variant="danger"
+                    onPress={() => endPass(ending)}
+                    loading={sending}
+                  />
+                </View>
+              </View>
+            </ThemedView>
+          ) : (
+            <AppButton
+              title={endAction === "cancel" ? "Cancel gatepass" : "Expire gatepass"}
+              variant="danger"
+              onPress={() => setEnding(endAction)}
+            />
+          ))}
 
         {canRespond && (
           <>

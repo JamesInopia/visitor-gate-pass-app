@@ -1,33 +1,39 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Pressable,
   StyleSheet,
   TextInput,
   View,
 } from "react-native";
 
 import { AppButton } from "@/components/app-button";
-import { StatusBadge } from "@/components/status-badge";
+import {
+  TenantHeaderRow,
+  TenantRequestRow,
+} from "@/components/tenant-request-row";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Spacing } from "@/constants/theme";
 import { useRequests } from "@/hooks/use-requests";
 import { useTheme } from "@/hooks/use-theme";
-import { describeForTenant, phaseOf } from "@/lib/gatepass-time";
+import { phaseOf } from "@/lib/gatepass-time";
 
 export default function ManageGatepassScreen() {
   const theme = useTheme();
-  const router = useRouter();
   const { status, requests, problem, retry } = useRequests();
   const [query, setQuery] = useState("");
 
   const q = query.trim().toLowerCase();
   const now = new Date();
-  const visible = requests.filter((r) => r.status !== "cancelled");
+  // Active and approved gatepasses stay here; only expired approved passes
+  // move to the History tab.
+  const visible = requests.filter(
+    (r) =>
+      r.status !== "cancelled" &&
+      !(r.status === "approved" && phaseOf(r, now) === "expired"),
+  );
   const shown = visible
     .filter((r) => r.visitorName.toLowerCase().includes(q))
     .sort(
@@ -84,14 +90,7 @@ export default function ManageGatepassScreen() {
         Incoming Requests
       </ThemedText>
 
-      <View style={[styles.row, styles.headerRow]}>
-        <ThemedText type="smallBold" style={styles.nameCol}>
-          Request from:
-        </ThemedText>
-        <ThemedText type="smallBold" style={styles.statusCol}>
-          Status
-        </ThemedText>
-      </View>
+      <TenantHeaderRow />
 
       <FlatList
         data={shown}
@@ -100,38 +99,7 @@ export default function ManageGatepassScreen() {
           gap: Spacing.two,
           paddingBottom: Spacing.four,
         }}
-        renderItem={({ item }) => {
-          const d = describeForTenant(item, now);
-          return (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push(`/manage-gatepass/${item.id}`)}
-              style={({ pressed }) => [
-                styles.row,
-                styles.card,
-                {
-                  borderColor: theme.textSecondary,
-                  backgroundColor: pressed
-                    ? theme.backgroundSelected
-                    : theme.background,
-                },
-              ]}
-            >
-              <View style={styles.nameCol}>
-                <ThemedText type="smallBold">{item.visitorName}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {d.detail}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {d.schedule}
-                </ThemedText>
-              </View>
-              <View style={styles.statusCol}>
-                <StatusBadge phase={d.phase} label={d.badge} />
-              </View>
-            </Pressable>
-          );
-        }}
+        renderItem={({ item }) => <TenantRequestRow request={item} now={now} />}
         ListEmptyComponent={
           <ThemedText themeColor="textSecondary" style={styles.noMatch}>
             No requests match &quot;{query}&quot;.
@@ -161,10 +129,5 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, paddingVertical: Spacing.three, fontSize: 16 },
   title: { fontSize: 24, lineHeight: 32, textAlign: "center" },
-  row: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
-  headerRow: { paddingHorizontal: Spacing.three },
-  card: { borderWidth: 1, borderRadius: 12, padding: Spacing.three },
-  nameCol: { flex: 3 },
-  statusCol: { flex: 2, alignItems: "flex-start" },
   noMatch: { textAlign: "center", paddingTop: Spacing.three },
 });
