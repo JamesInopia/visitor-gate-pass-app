@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BecomeTenantSheet } from "@/components/become-tenant-sheet";
 import { ThemedText } from "@/components/themed-text";
 import { Spacing } from "@/constants/theme";
 import { useProfile } from "@/hooks/use-profile";
@@ -14,10 +15,16 @@ export function AppHeader({ title }: { title: string }) {
   const insets = useSafeAreaInsets();
   const profile = useProfile();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [tenantOpen, setTenantOpen] = useState(false);
 
   async function signOut() {
     setMenuOpen(false);
     await supabase.auth.signOut();
+  }
+
+  function becomeTenant() {
+    setMenuOpen(false);
+    setTenantOpen(true);
   }
 
   return (
@@ -52,46 +59,63 @@ export function AppHeader({ title }: { title: string }) {
       </Pressable>
 
       <Modal
-        visible={menuOpen}
+        visible={menuOpen || tenantOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setMenuOpen(false)}
+        onRequestClose={() => {
+          setMenuOpen(false);
+          setTenantOpen(false);
+        }}
       >
-        <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
-          <View
-            style={[
-              styles.menu,
-              {
-                top: insets.top + 48,
-                backgroundColor: theme.backgroundElement,
-              },
-            ]}
-          >
-            <View style={styles.who}>
-              <ThemedText type="smallBold">{profile.name}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {profile.email}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                Role: {profile.role}
-              </ThemedText>
-            </View>
+        {tenantOpen ? (
+          <BecomeTenantSheet onClose={() => setTenantOpen(false)} />
+        ) : (
+          <Pressable style={styles.backdrop} onPress={() => setMenuOpen(false)}>
             <View
               style={[
-                styles.divider,
-                { backgroundColor: theme.backgroundSelected },
+                styles.menu,
+                {
+                  top: insets.top + 48,
+                  backgroundColor: theme.backgroundElement,
+                },
               ]}
-            />
-            <Pressable
-              accessibilityLabel="Sign out"
-              onPress={signOut}
-              style={styles.item}
             >
-              <Ionicons name="log-out-outline" size={20} color={theme.text} />
-              <ThemedText>Sign out</ThemedText>
-            </Pressable>
-          </View>
-        </Pressable>
+              <View style={styles.who}>
+                <ThemedText type="smallBold">{profile.name}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {profile.email}
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  Role: {profile.role}
+                </ThemedText>
+              </View>
+              <View
+                style={[
+                  styles.divider,
+                  { backgroundColor: theme.backgroundSelected },
+                ]}
+              />
+              {profile.role === "visitor" && (
+                <Pressable
+                  accessibilityLabel="Become a tenant"
+                  onPress={becomeTenant}
+                  style={styles.item}
+                >
+                  <Ionicons name="home-outline" size={20} color={theme.text} />
+                  <ThemedText>Become a tenant</ThemedText>
+                </Pressable>
+              )}
+              <Pressable
+                accessibilityLabel="Sign out"
+                onPress={signOut}
+                style={styles.item}
+              >
+                <Ionicons name="log-out-outline" size={20} color={theme.text} />
+                <ThemedText>Sign out</ThemedText>
+              </Pressable>
+            </View>
+          </Pressable>
+        )}
       </Modal>
     </View>
   );
