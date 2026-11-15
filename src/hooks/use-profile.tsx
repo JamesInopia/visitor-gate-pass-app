@@ -1,3 +1,4 @@
+import { AppState } from "react-native";
 import {
   createContext,
   useCallback,
@@ -6,7 +7,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { AppState } from "react-native";
 
 import { fetchProfile, type Profile } from "@/data/profile";
 
@@ -24,6 +24,9 @@ export function ProfileProvider({
 }) {
   const [state, setState] = useState<State>({ status: "loading" });
 
+  // Re-reads the profile without showing the loading screen. Used when the
+  // role can change behind the app's back (e.g. an admin approves a visitor
+  // who asked to become a tenant). Failures are ignored; the old profile stays.
   const refresh = useCallback(
     () =>
       fetchProfile()
@@ -71,6 +74,7 @@ export function useProfile(): Profile {
   return state.profile;
 }
 
+/** Silently re-reads the signed-in user's profile (role, unit, name). */
 export function useRefreshProfile(): () => Promise<void> {
   const state = useContext(ProfileContext);
   return state.status === "ready" ? state.refresh : async () => {};

@@ -88,12 +88,12 @@ export default function MyGatepassScreen() {
   } else if (!hasPending) {
     body = (
       <View style={styles.middle}>
-        <ThemedText type="subtitle" style={styles.emptyTitle}>
-          There are no requests
-        </ThemedText>
+        <ThemedText style={styles.emptyTitle}>No Requests</ThemedText>
         <AppButton
-          title="Wanna add one?"
-          variant="outline"
+          variant="brand"
+          icon="add"
+          title="Make a request"
+          style={{ alignSelf: "stretch" }}
           onPress={() => setAdding(true)}
         />
       </View>
@@ -175,9 +175,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.three,
-    padding: Spacing.four,
+    padding: Spacing.three,
   },
-  emptyTitle: { fontSize: 24, lineHeight: 32, textAlign: "center" },
+  emptyTitle: { fontSize: 32, lineHeight: 40, fontWeight: "800", textAlign: "center" },
   screen: { flex: 1, padding: Spacing.three, gap: Spacing.three },
   content: {
     padding: Spacing.three,

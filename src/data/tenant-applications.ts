@@ -19,6 +19,7 @@ export type NewTenantApplication = {
   unitNo: string;
 };
 
+/** The signed-in visitor's own applications, newest first. */
 export const fetchMyTenantApplications = (): Promise<TenantApplication[]> =>
   get<TenantApplication[]>("/api/tenant-applications");
 

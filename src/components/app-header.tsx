@@ -5,12 +5,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BecomeTenantSheet } from "@/components/become-tenant-sheet";
 import { ThemedText } from "@/components/themed-text";
-import { Spacing } from "@/constants/theme";
+import { Brand, Spacing } from "@/constants/theme";
 import { useProfile } from "@/hooks/use-profile";
 import { useTheme } from "@/hooks/use-theme";
 import { supabase } from "@/lib/supabase";
 
-export function AppHeader({ title }: { title: string }) {
+export function AppHeader() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const profile = useProfile();
@@ -22,6 +22,8 @@ export function AppHeader({ title }: { title: string }) {
     await supabase.auth.signOut();
   }
 
+  // The Modal stays open and switches from the menu to the form, so there is
+  // never a second Modal opening while the first one is still closing.
   function becomeTenant() {
     setMenuOpen(false);
     setTenantOpen(true);
@@ -33,8 +35,7 @@ export function AppHeader({ title }: { title: string }) {
         styles.bar,
         {
           paddingTop: insets.top,
-          backgroundColor: theme.background,
-          borderBottomColor: theme.backgroundSelected,
+          backgroundColor: Brand.navy,
         },
       ]}
     >
@@ -44,18 +45,15 @@ export function AppHeader({ title }: { title: string }) {
         onPress={() => setMenuOpen(true)}
         style={styles.button}
       >
-        <Ionicons name="menu" size={26} color={theme.text} />
+        <Ionicons name="menu" size={28} color="#ffffff" />
       </Pressable>
-      <ThemedText type="smallBold" style={styles.title}>
-        {title}
-      </ThemedText>
       <Pressable
         accessibilityLabel="Help"
         hitSlop={12}
         onPress={() => {}}
         style={styles.button}
       >
-        <Ionicons name="help-circle-outline" size={26} color={theme.text} />
+        <Ionicons name="help-circle-outline" size={28} color="#ffffff" />
       </Pressable>
 
       <Modal
@@ -128,10 +126,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: Spacing.three,
     paddingBottom: Spacing.two,
-    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   button: { padding: Spacing.one },
-  title: { fontSize: 16 },
   backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.3)" },
   menu: {
     position: "absolute",

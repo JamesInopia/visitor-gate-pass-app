@@ -107,7 +107,7 @@ export function describe(r: GatepassRequest, now = new Date()) {
       return {
         phase,
         schedule,
-        badge: "Approved",
+        badge: "Accepted",
         detail: takesEffectLabel(
           new Date(r.pass!.startsAt),
           now,

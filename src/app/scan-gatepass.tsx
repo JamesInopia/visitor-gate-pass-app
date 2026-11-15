@@ -15,7 +15,7 @@ import { AppButton } from "@/components/app-button";
 import { RoleGuard } from "@/components/role-guard";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Spacing } from "@/constants/theme";
+import { Brand, Spacing } from "@/constants/theme";
 import { problemFor } from "@/data/problem";
 import { scanGatepass, type ScanResult } from "@/data/scan";
 import { useTheme } from "@/hooks/use-theme";
@@ -214,21 +214,30 @@ function Scanner() {
     );
 
   return (
-    <ThemedView style={{ flex: 1 }}>
-      <View style={styles.cameraWrap}>
-        {focused && (
-          <CameraView
-            style={StyleSheet.absoluteFill}
-            facing="back"
-            barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-            onBarcodeScanned={({ data }) => check(data)}
-          />
-        )}
-        <View pointerEvents="none" style={styles.frame} />
+    <View style={styles.scanScreen}>
+      <ThemedText style={styles.scanTitle}>Gatepass Scanner</ThemedText>
+
+      <View style={styles.scanCenter}>
+        <View style={styles.viewfinder}>
+          <View style={styles.cameraClip}>
+            {focused && (
+              <CameraView
+                style={StyleSheet.absoluteFill}
+                facing="back"
+                barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+                onBarcodeScanned={({ data }) => check(data)}
+              />
+            )}
+          </View>
+          <View pointerEvents="none" style={[styles.corner, styles.tl]} />
+          <View pointerEvents="none" style={[styles.corner, styles.tr]} />
+          <View pointerEvents="none" style={[styles.corner, styles.bl]} />
+          <View pointerEvents="none" style={[styles.corner, styles.br]} />
+        </View>
       </View>
 
       <View style={styles.manual}>
-        <ThemedText type="small" themeColor="textSecondary">
+        <ThemedText type="small" style={{ color: "#444444" }}>
           Or type the code
         </ThemedText>
         <View style={styles.manualRow}>
@@ -238,20 +247,18 @@ function Scanner() {
             autoCapitalize="characters"
             autoCorrect={false}
             placeholder="XXXX-XXXX"
-            placeholderTextColor={theme.textSecondary}
-            style={[
-              styles.input,
-              { color: theme.text, backgroundColor: theme.backgroundElement },
-            ]}
+            placeholderTextColor="#888888"
+            style={[styles.input, { color: "#000000", backgroundColor: "#ffffff" }]}
           />
           <AppButton
+            variant="brand"
             title="Check"
             disabled={manual.trim() === ""}
             onPress={() => check(manual)}
           />
         </View>
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -271,19 +278,32 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     padding: Spacing.four,
   },
-  cameraWrap: {
-    flex: 1,
-    backgroundColor: "#000000",
-    alignItems: "center",
-    justifyContent: "center",
+  scanScreen: { flex: 1, backgroundColor: Brand.scanBg },
+  scanTitle: {
+    color: "#000000",
+    fontSize: 32,
+    lineHeight: 40,
+    fontWeight: "800",
+    textAlign: "center",
+    marginTop: Spacing.five,
   },
-  frame: {
-    width: 240,
-    height: 240,
-    borderWidth: 3,
-    borderColor: "#ffffff",
-    borderRadius: 16,
+  scanCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
+  viewfinder: { width: "68%", maxWidth: 280, aspectRatio: 1 },
+  cameraClip: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#ffffff",
+    borderRadius: 28,
+    overflow: "hidden",
   },
+  corner: { position: "absolute", width: 44, height: 44, borderColor: Brand.bracket },
+  tl: { top: -4, left: -4, borderTopWidth: 6, borderLeftWidth: 6, borderTopLeftRadius: 28 },
+  tr: { top: -4, right: -4, borderTopWidth: 6, borderRightWidth: 6, borderTopRightRadius: 28 },
+  bl: { bottom: -4, left: -4, borderBottomWidth: 6, borderLeftWidth: 6, borderBottomLeftRadius: 28 },
+  br: { bottom: -4, right: -4, borderBottomWidth: 6, borderRightWidth: 6, borderBottomRightRadius: 28 },
   manual: { padding: Spacing.three, gap: Spacing.two },
   manualRow: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
   input: {

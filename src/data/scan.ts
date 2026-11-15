@@ -23,6 +23,7 @@ export type EntryEvent = {
   at: string;
   visitorName: string;
   code: string;
+  photoUrl?: string;
 };
 
 export const scanGatepass = (code: string): Promise<ScanResult> =>

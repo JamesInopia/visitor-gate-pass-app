@@ -17,13 +17,13 @@ export const TABS: {
   title: string;
   icon: ComponentProps<typeof Ionicons>["name"];
 }[] = [
-  { route: "index", title: "Home", icon: "home" },
-  { route: "my-gatepass", title: "My Gatepass", icon: "ticket" },
-  { route: "visit-history", title: "History", icon: "time" },
-  { route: "manage-gatepass", title: "Manage Gatepass", icon: "list" },
-  { route: "manage-history", title: "History", icon: "time" },
-  { route: "scan-gatepass", title: "Scan Gatepass", icon: "qr-code" },
-  { route: "entry-log", title: "Entry Log", icon: "reader" },
+  { route: "index", title: "Home", icon: "home-outline" },
+  { route: "my-gatepass", title: "My Gatepass", icon: "ticket-outline" },
+  { route: "visit-history", title: "History", icon: "time-outline" },
+  { route: "manage-gatepass", title: "Manage Requests", icon: "ticket-outline" },
+  { route: "manage-history", title: "History", icon: "time-outline" },
+  { route: "scan-gatepass", title: "Scan Gatepass", icon: "qr-code-outline" },
+  { route: "entry-log", title: "Visitor Log", icon: "log-in-outline" },
 ];
 
 export const ROLE_ROUTES: Record<Role, TabRoute[]> = {

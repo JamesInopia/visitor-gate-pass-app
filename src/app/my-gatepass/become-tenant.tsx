@@ -40,6 +40,7 @@ const formatDate = (iso: string) =>
 
 function submitProblem(e: unknown) {
   const err = e as Error & { code?: string };
+  // The API explains validation problems in plain words; show them as they are.
   if (err?.message === "400" && err.code) return err.code;
   return problemFor(
     e,
@@ -85,6 +86,8 @@ function BecomeTenant() {
       });
   }, []);
 
+  // Every time the screen comes into view: re-check the request, and re-read
+  // the profile in case an admin has approved it and the role changed.
   useFocusEffect(
     useCallback(() => {
       fetchLatest(true);
@@ -188,6 +191,8 @@ function BecomeTenant() {
       </ThemedView>
     );
 
+  // Approved. The role flips to tenant as soon as the profile refresh lands,
+  // and the role guard then sends the person Home.
   if (latest?.status === "approved")
     return (
       <ThemedView style={styles.screen}>

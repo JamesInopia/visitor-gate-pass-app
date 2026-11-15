@@ -1,18 +1,15 @@
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 
 import { AppButton } from "@/components/app-button";
 import { RoleGuard } from "@/components/role-guard";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Spacing } from "@/constants/theme";
+import { Brand, Spacing } from "@/constants/theme";
 import { fetchEntryLog, type EntryEvent } from "@/data/scan";
 import { useFocusList } from "@/hooks/use-focus-list";
 import { useTheme } from "@/hooks/use-theme";
-import { formatDateTime } from "@/lib/gatepass-time";
-
-const GREEN = "#2e9e5b";
-const RED = "#d64545";
 
 function EventRow({ event }: { event: EntryEvent }) {
   const theme = useTheme();
@@ -25,9 +22,13 @@ function EventRow({ event }: { event: EntryEvent }) {
         { backgroundColor: theme.background, borderColor: theme.backgroundSelected },
       ]}
     >
-      <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}>
-        <Ionicons name="person" size={22} color={theme.textSecondary} />
-      </View>
+      {event.photoUrl ? (
+        <Image source={{ uri: event.photoUrl }} style={styles.avatar} />
+      ) : (
+        <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}>
+          <Ionicons name="person" size={22} color={theme.textSecondary} />
+        </View>
+      )}
       <View style={{ flex: 1 }}>
         <ThemedText type="smallBold">{event.visitorName}</ThemedText>
         <ThemedText type="small">
@@ -36,12 +37,9 @@ function EventRow({ event }: { event: EntryEvent }) {
             {event.code}
           </ThemedText>
         </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {formatDateTime(event.at)}
-        </ThemedText>
       </View>
-      <View style={[styles.pill, { backgroundColor: entering ? GREEN : RED }]}>
-        <ThemedText type="smallBold" style={{ color: "#ffffff" }}>
+      <View style={[styles.pill, { backgroundColor: entering ? Brand.green : Brand.red }]}>
+        <ThemedText type="small" style={{ color: "#000000" }}>
           {entering ? "Enter" : "Exit"}
         </ThemedText>
       </View>
@@ -82,16 +80,19 @@ function EntryLog() {
     );
 
   return (
-    <ThemedView style={{ flex: 1 }}>
-      <FlatList
-        data={items}
-        keyExtractor={(e) => e.id}
-        contentContainerStyle={styles.list}
-        refreshing={false}
-        onRefresh={refresh}
-        renderItem={({ item }) => <EventRow event={item} />}
-      />
-    </ThemedView>
+    <View style={styles.page}>
+      <View style={styles.panel}>
+        <ThemedText style={styles.heading}>Entry Log</ThemedText>
+        <FlatList
+          data={items}
+          keyExtractor={(e) => e.id}
+          contentContainerStyle={styles.list}
+          refreshing={false}
+          onRefresh={refresh}
+          renderItem={({ item }) => <EventRow event={item} />}
+        />
+      </View>
+    </View>
   );
 }
 
@@ -112,25 +113,49 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
   },
   emptyTitle: { fontSize: 24, lineHeight: 32, textAlign: "center" },
-  list: { padding: Spacing.three, gap: Spacing.two },
+  page: { flex: 1, backgroundColor: Brand.logBg, padding: Spacing.three },
+  panel: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  heading: {
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: "800",
+    textAlign: "center",
+    paddingVertical: Spacing.three,
+    color: "#000000",
+  },
+  list: { padding: Spacing.three, paddingTop: 0, gap: Spacing.three },
   row: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.three,
-    borderWidth: 1,
-    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 8,
     padding: Spacing.three,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
+    overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
   code: { textDecorationLine: "underline" },
   pill: {
-    borderRadius: 999,
+    borderRadius: 10,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one + 2,
   },

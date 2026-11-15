@@ -9,14 +9,19 @@ import { useTheme } from "@/hooks/use-theme";
 import { describeForTenant } from "@/lib/gatepass-time";
 
 export function TenantHeaderRow() {
+  const theme = useTheme();
   return (
-    <View style={[styles.row, styles.headerRow]}>
-      <ThemedText type="smallBold" style={styles.nameCol}>
-        Request from:
+    <View
+      style={[
+        styles.row,
+        styles.headerRow,
+        { borderColor: theme.backgroundSelected },
+      ]}
+    >
+      <ThemedText type="smallBold" style={{ flex: 1 }}>
+        Request sent from:
       </ThemedText>
-      <ThemedText type="smallBold" style={styles.statusCol}>
-        Status
-      </ThemedText>
+      <ThemedText type="smallBold">Status:</ThemedText>
     </View>
   );
 }
@@ -40,31 +45,34 @@ export function TenantRequestRow({
         styles.row,
         styles.card,
         {
-          borderColor: theme.textSecondary,
           backgroundColor: pressed ? theme.backgroundSelected : theme.background,
         },
       ]}
     >
-      <View style={styles.nameCol}>
-        <ThemedText type="smallBold">{request.visitorName}</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {d.detail}
-        </ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {d.schedule}
-        </ThemedText>
-      </View>
-      <View style={styles.statusCol}>
-        <StatusBadge phase={d.phase} label={d.badge} />
-      </View>
+      <ThemedText type="small" style={{ flex: 1 }} numberOfLines={1}>
+        {request.visitorName}
+      </ThemedText>
+      <StatusBadge phase={d.phase} label={d.badge} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
-  headerRow: { paddingHorizontal: Spacing.three },
-  card: { borderWidth: 1, borderRadius: 12, padding: Spacing.three },
-  nameCol: { flex: 3 },
-  statusCol: { flex: 2, alignItems: "flex-start" },
+  headerRow: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  card: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    borderRadius: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
 });

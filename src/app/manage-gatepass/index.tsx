@@ -15,13 +15,11 @@ import {
 } from "@/components/tenant-request-row";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import { Spacing } from "@/constants/theme";
+import { Brand, Spacing } from "@/constants/theme";
 import { useRequests } from "@/hooks/use-requests";
-import { useTheme } from "@/hooks/use-theme";
 import { phaseOf } from "@/lib/gatepass-time";
 
 export default function ManageGatepassScreen() {
-  const theme = useTheme();
   const { status, requests, problem, retry } = useRequests();
   const [query, setQuery] = useState("");
 
@@ -73,22 +71,19 @@ export default function ManageGatepassScreen() {
 
   return (
     <ThemedView style={styles.screen}>
-      <View
-        style={[styles.search, { backgroundColor: theme.backgroundElement }]}
-      >
-        <Ionicons name="search" size={18} color={theme.textSecondary} />
+      <View style={[styles.search, { backgroundColor: Brand.field }]}>
+        <Ionicons name="funnel-outline" size={20} color="#000000" />
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Search for a request"
-          placeholderTextColor={theme.textSecondary}
-          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="Search requests"
+          placeholderTextColor="#444444"
+          style={[styles.searchInput, { color: "#000000" }]}
         />
+        <Ionicons name="search-outline" size={20} color="#000000" />
       </View>
 
-      <ThemedText type="subtitle" style={styles.title}>
-        Incoming Requests
-      </ThemedText>
+      <ThemedText style={styles.title}>Incoming Requests</ThemedText>
 
       <TenantHeaderRow />
 
@@ -126,8 +121,13 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   searchInput: { flex: 1, paddingVertical: Spacing.three, fontSize: 16 },
-  title: { fontSize: 24, lineHeight: 32, textAlign: "center" },
+  title: { fontSize: 32, lineHeight: 40, fontWeight: "800", textAlign: "center" },
   noMatch: { textAlign: "center", paddingTop: Spacing.three },
 });

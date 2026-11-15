@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
-import { Button, ActivityIndicator, useColorScheme } from "react-native";
+import { ActivityIndicator, Button, useColorScheme } from "react-native";
 
 import AppTabs from "@/components/app-tabs";
 import { Login } from "@/components/login";
@@ -20,13 +20,26 @@ export default function RootLayout() {
       {session && (
         <ProfileProvider key={session.user.id}>
           {(state) => {
-            if (state.status === "loading") return <ActivityIndicator style={{ flex: 1 }} />;
+            if (state.status === "loading")
+              return <ActivityIndicator style={{ flex: 1 }} />;
             if (state.status === "error")
               return (
-                <ThemedView style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: 16 }}>
-                  <ThemedText>Could not load your account. Is the API running?</ThemedText>
+                <ThemedView
+                  style={{
+                    flex: 1,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 16,
+                  }}
+                >
+                  <ThemedText>
+                    Could not load your account. Is the API running?
+                  </ThemedText>
                   <Button title="Try again" onPress={state.retry} />
-                  <Button title="Log out" onPress={() => supabase.auth.signOut()} />
+                  <Button
+                    title="Log out"
+                    onPress={() => supabase.auth.signOut()}
+                  />
                 </ThemedView>
               );
             return <AppTabs />;
