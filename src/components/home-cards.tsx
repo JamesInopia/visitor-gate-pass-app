@@ -174,20 +174,30 @@ export function IncomingRequestsCard() {
   );
 }
 
-export function UpcomingGatepassCard() {
+function PassListCard({
+  title,
+  phase,
+  emptyTitle,
+  emptyText,
+}: {
+  title: string;
+  phase: "active" | "upcoming";
+  emptyTitle: string;
+  emptyText: string;
+}) {
   const router = useRouter();
   const { status, requests, problem, retry } = useRequests();
 
   const now = new Date();
-  const upcoming = requests
+  const passes = requests
     .map((r) => ({ r, d: describe(r, now) }))
-    .filter(({ d }) => d.phase === "upcoming" || d.phase === "active")
+    .filter(({ d }) => d.phase === phase)
     .sort(
       (a, b) =>
         new Date(a.r.pass?.startsAt ?? 0).getTime() -
         new Date(b.r.pass?.startsAt ?? 0).getTime(),
     );
-  const shown = upcoming.slice(0, 3);
+  const shown = passes.slice(0, 3);
 
   let body: ReactNode;
   if (status === "loading") {
@@ -202,10 +212,8 @@ export function UpcomingGatepassCard() {
   } else if (shown.length === 0) {
     body = (
       <View style={styles.stack}>
-        <ThemedText type="smallBold">No upcoming gatepasses</ThemedText>
-        <ThemedText themeColor="textSecondary">
-          Passes you approve for your visitors will show up here.
-        </ThemedText>
+        <ThemedText type="smallBold">{emptyTitle}</ThemedText>
+        <ThemedText themeColor="textSecondary">{emptyText}</ThemedText>
       </View>
     );
   } else {
@@ -227,9 +235,9 @@ export function UpcomingGatepassCard() {
             </ThemedText>
           </View>
         ))}
-        {upcoming.length > shown.length && (
+        {passes.length > shown.length && (
           <AppButton
-            title={`View all (${upcoming.length})`}
+            title={`View all (${passes.length})`}
             variant="outline"
             onPress={() => router.push("/manage-gatepass")}
           />
@@ -238,7 +246,29 @@ export function UpcomingGatepassCard() {
     );
   }
 
-  return <Card title="Upcoming Gatepass">{body}</Card>;
+  return <Card title={title}>{body}</Card>;
+}
+
+export function ActiveGatepassCard() {
+  return (
+    <PassListCard
+      title="Active Gatepass"
+      phase="active"
+      emptyTitle="No active gatepasses"
+      emptyText="Visitors whose pass is valid right now will show up here."
+    />
+  );
+}
+
+export function UpcomingGatepassCard() {
+  return (
+    <PassListCard
+      title="Upcoming Gatepass"
+      phase="upcoming"
+      emptyTitle="No upcoming gatepasses"
+      emptyText="Passes you approve for your visitors will show up here."
+    />
+  );
 }
 
 const styles = StyleSheet.create({

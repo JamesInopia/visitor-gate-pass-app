@@ -8,6 +8,8 @@ export function problemFor(
     return "You already have an approved gatepass, so you cannot request another one.";
   if (code === "no_tenant")
     return "We could not find a tenant with that name and unit. Check the details and try again.";
+  if (code === "needs_review")
+    return "This is the visitor's first entry. Check their ID and let them in from the review screen.";
   if (code === "visit_date_passed")
     return "That visit date has already passed.";
 

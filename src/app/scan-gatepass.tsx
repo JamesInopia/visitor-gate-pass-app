@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import { Image } from "expo-image";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -17,8 +18,14 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Brand, Spacing } from "@/constants/theme";
 import { problemFor } from "@/data/problem";
-import { scanGatepass, type ScanResult } from "@/data/scan";
+import {
+  previewScan,
+  scanGatepass,
+  type ScanPreview,
+  type ScanResult,
+} from "@/data/scan";
 import { useTheme } from "@/hooks/use-theme";
+import { apiUrl, authHeader } from "@/lib/api";
 import { formatDateTime } from "@/lib/gatepass-time";
 
 const GREEN = "#2e9e5b";
@@ -27,6 +34,7 @@ const RED = "#d64545";
 type Phase =
   | { kind: "scanning" }
   | { kind: "checking" }
+  | { kind: "review"; code: string; preview: Extract<ScanPreview, { ok: true }> }
   | { kind: "result"; result: ScanResult }
   | { kind: "failed"; message: string };
 
@@ -127,6 +135,110 @@ function ResultView({
   );
 }
 
+function ReviewView({
+  preview,
+  onAllow,
+  onDeny,
+}: {
+  preview: Extract<ScanPreview, { ok: true }>;
+  onAllow: () => void;
+  onDeny: () => void;
+}) {
+  const theme = useTheme();
+  const [headers, setHeaders] = useState<Record<string, string> | null>(null);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    authHeader()
+      .then(setHeaders)
+      .catch(() => setHeaders({}));
+  }, []);
+
+  const url = preview.idImageUrl ? apiUrl(preview.idImageUrl) : null;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <ScrollView contentContainerStyle={styles.resultWrap}>
+      <ThemedText style={styles.reviewTitle}>Verify Visitor ID</ThemedText>
+      <ThemedText themeColor="textSecondary" style={{ textAlign: "center" }}>
+        First entry. Check that the ID matches the person at the gate.
+      </ThemedText>
+
+      <ThemedView type="backgroundElement" style={styles.card}>
+        <ThemedText type="small" themeColor="textSecondary">
+          Submitted ID
+        </ThemedText>
+        <View style={styles.idFrame}>
+          {url && headers && !imageFailed ? (
+            <Image
+              source={{ uri: url, headers }}
+              style={StyleSheet.absoluteFill}
+              contentFit="contain"
+              onError={() => setImageFailed(true)}
+            />
+          ) : url && !headers ? (
+            <ActivityIndicator />
+          ) : (
+            <View style={styles.idEmpty}>
+              <Ionicons name="id-card-outline" size={40} color="#888888" />
+              <ThemedText type="small" themeColor="textSecondary">
+                {imageFailed ? "Could not load the ID image" : "No ID image on file"}
+              </ThemedText>
+            </View>
+          )}
+        </View>
+      </ThemedView>
+
+      <ThemedView type="backgroundElement" style={styles.card}>
+        {preview.visitorName ? (
+          <View style={{ gap: 2 }}>
+            <ThemedText type="small" themeColor="textSecondary">
+              Visitor
+            </ThemedText>
+            <ThemedText
+              type="smallBold"
+              style={{ fontSize: 20, lineHeight: 28 }}
+            >
+              {preview.visitorName}
+            </ThemedText>
+          </View>
+        ) : null}
+        {preview.hostName ? (
+          <View style={{ gap: 2 }}>
+            <ThemedText type="small" themeColor="textSecondary">
+              Visiting
+            </ThemedText>
+            <ThemedText>
+              {preview.hostName}
+              {preview.unitNo ? ` · Unit ${preview.unitNo}` : ""}
+            </ThemedText>
+          </View>
+        ) : null}
+        {preview.purpose ? (
+          <View style={{ gap: 2 }}>
+            <ThemedText type="small" themeColor="textSecondary">
+              Purpose of visit
+            </ThemedText>
+            <ThemedText>{preview.purpose}</ThemedText>
+          </View>
+        ) : null}
+      </ThemedView>
+
+    </ScrollView>
+
+    <View style={[styles.actions, { borderTopColor: theme.backgroundSelected }]}>
+      <AppButton
+        variant="brand"
+        icon="checkmark"
+        title="Let them in"
+        onPress={onAllow}
+      />
+      <AppButton variant="danger" title="Do not allow" onPress={onDeny} />
+    </View>
+    </View>
+  );
+}
+
 function Scanner() {
   const theme = useTheme();
   const [permission, requestPermission] = useCameraPermissions();
@@ -142,12 +254,9 @@ function Scanner() {
     }, []),
   );
 
-  const check = useCallback((raw: string) => {
-    const code = raw.trim();
-    if (!code || busy.current) return;
-    busy.current = true;
+  const record = useCallback((code: string, confirmed = false) => {
     setPhase({ kind: "checking" });
-    scanGatepass(code)
+    scanGatepass(code, confirmed)
       .then((result) => setPhase({ kind: "result", result }))
       .catch((e) =>
         setPhase({
@@ -156,6 +265,29 @@ function Scanner() {
         }),
       );
   }, []);
+
+  const check = useCallback(
+    (raw: string) => {
+      const code = raw.trim();
+      if (!code || busy.current) return;
+      busy.current = true;
+      setPhase({ kind: "checking" });
+      previewScan(code)
+        .then((preview) => {
+          if (!preview.ok) setPhase({ kind: "result", result: preview });
+          // Exit or re-entry: no ID check, record straight away.
+          else if (!preview.firstEntry) record(code);
+          else setPhase({ kind: "review", code, preview });
+        })
+        .catch((e) =>
+          setPhase({
+            kind: "failed",
+            message: problemFor(e, "Scanner is not set up on the server."),
+          }),
+        );
+    },
+    [record],
+  );
 
   const next = () => {
     busy.current = false;
@@ -184,6 +316,15 @@ function Scanner() {
         </ThemedText>
         <AppButton title="Scan again" onPress={next} />
       </ThemedView>
+    );
+
+  if (phase.kind === "review")
+    return (
+      <ReviewView
+        preview={phase.preview}
+        onAllow={() => record(phase.code, true)}
+        onDeny={next}
+      />
     );
 
   if (phase.kind === "result")
@@ -324,4 +465,25 @@ const styles = StyleSheet.create({
   bannerTitle: { color: "#ffffff", fontSize: 28, lineHeight: 36 },
   bannerText: { color: "#ffffff" },
   card: { borderRadius: 12, padding: Spacing.three, gap: Spacing.three },
+  reviewTitle: {
+    fontSize: 28,
+    lineHeight: 36,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  idFrame: {
+    width: "100%",
+    aspectRatio: 4 / 3,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#00000012",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actions: {
+    padding: Spacing.three,
+    gap: Spacing.two,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  idEmpty: { alignItems: "center", gap: Spacing.two },
 });

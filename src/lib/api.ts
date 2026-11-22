@@ -9,7 +9,10 @@ function timeout(ms: number): Promise<never> {
   );
 }
 
-async function authHeader() {
+// Turns a path the server sent back ("/api/...") into a full URL.
+export const apiUrl = (path: string) => (/^https?:\/\//.test(path) ? path : BASE + path);
+
+export async function authHeader() {
   const { data } = await supabase.auth.getSession();
   return { Authorization: "Bearer " + data.session?.access_token };
 }
